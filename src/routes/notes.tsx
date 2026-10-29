@@ -5,7 +5,7 @@ import { useData, upsert, remove, newId, splitTags, fmt, type Note } from "@/lib
 import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, SearchBox, Empty, confirmDel, ImagePicker, Thumb, Lightbox } from "@/components/kit";
 
 export const Route = createFileRoute("/notes")({
-  validateSearch: (s: Record<string, unknown>): { new?: true } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
+  validateSearch: (s: Record<string, unknown>): { new?: true | undefined } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
   head: () => ({ meta: [{ title: "截图笔记 · Mein Deutsch Workspace" }, { name: "description", content: "用截图整理德语学习笔记。" }, { property: "og:title", content: "德语截图笔记库" }, { property: "og:description", content: "用截图整理德语学习笔记。" }] }),
   component: Notes,
 });
@@ -19,7 +19,7 @@ function Notes() {
   const [edit, setEdit] = useState<Note | null>(null); const [tagText, setTagText] = useState("");
   const [view, setView] = useState<string | null>(null);
   const open = (n: Note) => { setEdit(n); setTagText(n.tags.join(", ")); };
-  useEffect(() => { if (search.new) { open(blank()); nav({ to: "/notes", search: { new: undefined }, replace: true }); } }, [search.new]);
+  useEffect(() => { if (search.new) { open(blank()); nav({ to: "/notes", search: {}, replace: true }); } }, [search.new]);
 
   const cats = [...new Set(notes.map((n) => n.category).filter(Boolean))];
   const tags = [...new Set(notes.flatMap((n) => n.tags))];

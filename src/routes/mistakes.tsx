@@ -5,7 +5,7 @@ import { useData, upsert, remove, newId, MISTAKE_CATS, REVIEW, type Mistake } fr
 import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, statusTone, SearchBox, Empty, confirmDel, ImagePicker, Thumb, Lightbox } from "@/components/kit";
 
 export const Route = createFileRoute("/mistakes")({
-  validateSearch: (s: Record<string, unknown>): { new?: true } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
+  validateSearch: (s: Record<string, unknown>): { new?: true | undefined } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
   head: () => ({ meta: [{ title: "错题库 · Mein Deutsch Workspace" }, { name: "description", content: "记录德语错题、错误原因与复习状态。" }, { property: "og:title", content: "德语错题库" }, { property: "og:description", content: "记录德语错题、错误原因与复习状态。" }] }),
   component: Mistakes,
 });
@@ -19,7 +19,7 @@ function Mistakes() {
   const [q, setQ] = useState(""); const [cat, setCat] = useState(""); const [rv, setRv] = useState("");
   const [edit, setEdit] = useState<Mistake | null>(null);
   const [view, setView] = useState<string | null>(null);
-  useEffect(() => { if (search.new) { setEdit(blank()); nav({ to: "/mistakes", search: { new: undefined }, replace: true }); } }, [search.new]);
+  useEffect(() => { if (search.new) { setEdit(blank()); nav({ to: "/mistakes", search: {}, replace: true }); } }, [search.new]);
 
   const list = useMemo(() => mistakes.filter((m) => (!cat || m.category === cat) && (!rv || m.review === rv) &&
     (!q || [m.question, m.wrong, m.correct, m.reason].join(" ").toLowerCase().includes(q.toLowerCase()))), [mistakes, q, cat, rv]);

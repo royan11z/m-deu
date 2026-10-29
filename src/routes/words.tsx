@@ -5,7 +5,7 @@ import { useData, upsert, remove, newId, LEVELS, POS, MASTERY, splitTags, fmt, t
 import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, statusTone, SearchBox, Empty, confirmDel } from "@/components/kit";
 
 export const Route = createFileRoute("/words")({
-  validateSearch: (s: Record<string, unknown>): { new?: true } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
+  validateSearch: (s: Record<string, unknown>): { new?: true | undefined } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
   head: () => ({ meta: [{ title: "单词库 · Mein Deutsch Workspace" }, { name: "description", content: "管理德语单词、词性、复数与例句。" }, { property: "og:title", content: "德语单词库" }, { property: "og:description", content: "管理德语单词、词性、复数与例句。" }] }),
   component: Words,
 });
@@ -19,7 +19,7 @@ function Words() {
   const [q, setQ] = useState(""); const [lv, setLv] = useState(""); const [ms, setMs] = useState("");
   const [edit, setEdit] = useState<Word | null>(null);
   const [tagText, setTagText] = useState("");
-  useEffect(() => { if (search.new) { open(blank()); nav({ to: "/words", search: { new: undefined }, replace: true }); } }, [search.new]);
+  useEffect(() => { if (search.new) { open(blank()); nav({ to: "/words", search: {}, replace: true }); } }, [search.new]);
   const open = (w: Word) => { setEdit(w); setTagText(w.tags.join(", ")); };
 
   const list = useMemo(() => words.filter((w) =>
