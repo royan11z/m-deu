@@ -5,7 +5,7 @@ import { useData, upsert, remove, newId, LEVELS, POS, MASTERY, splitTags, fmt, t
 import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, statusTone, SearchBox, Empty, confirmDel } from "@/components/kit";
 
 export const Route = createFileRoute("/words")({
-  validateSearch: (s: Record<string, unknown>) => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
+  validateSearch: (s: Record<string, unknown>): { new?: true } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
   head: () => ({ meta: [{ title: "单词库 · Mein Deutsch Workspace" }, { name: "description", content: "管理德语单词、词性、复数与例句。" }, { property: "og:title", content: "德语单词库" }, { property: "og:description", content: "管理德语单词、词性、复数与例句。" }] }),
   component: Words,
 });

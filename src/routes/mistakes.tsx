@@ -5,7 +5,7 @@ import { useData, upsert, remove, newId, MISTAKE_CATS, REVIEW, type Mistake } fr
 import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, statusTone, SearchBox, Empty, confirmDel, ImagePicker, Thumb, Lightbox } from "@/components/kit";
 
 export const Route = createFileRoute("/mistakes")({
-  validateSearch: (s: Record<string, unknown>) => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
+  validateSearch: (s: Record<string, unknown>): { new?: true } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
   head: () => ({ meta: [{ title: "错题库 · Mein Deutsch Workspace" }, { name: "description", content: "记录德语错题、错误原因与复习状态。" }, { property: "og:title", content: "德语错题库" }, { property: "og:description", content: "记录德语错题、错误原因与复习状态。" }] }),
   component: Mistakes,
 });

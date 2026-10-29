@@ -5,7 +5,7 @@ import { useData, upsert, remove, newId, splitTags, fmt, type Note } from "@/lib
 import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, SearchBox, Empty, confirmDel, ImagePicker, Thumb, Lightbox } from "@/components/kit";
 
 export const Route = createFileRoute("/notes")({
-  validateSearch: (s: Record<string, unknown>) => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
+  validateSearch: (s: Record<string, unknown>): { new?: true } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
   head: () => ({ meta: [{ title: "截图笔记 · Mein Deutsch Workspace" }, { name: "description", content: "用截图整理德语学习笔记。" }, { property: "og:title", content: "德语截图笔记库" }, { property: "og:description", content: "用截图整理德语学习笔记。" }] }),
   component: Notes,
 });
