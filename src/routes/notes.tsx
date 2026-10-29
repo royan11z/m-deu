@@ -6,7 +6,7 @@ import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, SearchBox, Empty
 
 export const Route = createFileRoute("/notes")({
   validateSearch: (s: Record<string, unknown>): { new?: true | undefined } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
-  head: () => ({ meta: [{ title: "截图笔记 · Mein Deutsch Workspace" }, { name: "description", content: "用截图整理德语学习笔记。" }, { property: "og:title", content: "德语截图笔记库" }, { property: "og:description", content: "用截图整理德语学习笔记。" }] }),
+  head: () => ({ meta: [{ title: "截图笔记 · Mein Deutsch Workspace" }, { name: "description", content: "用截图整理德语学习笔记。" }, { property: "og:title", content: "德语截图笔记库" }, { property: "og:description", content: "用截图整理德语学习笔记。" }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: Notes,
 });
 

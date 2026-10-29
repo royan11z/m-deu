@@ -10,6 +10,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "个人德语学习工作台：单词库、错题库与截图笔记。" },
       { property: "og:title", content: "Mein Deutsch Workspace" },
       { property: "og:description", content: "个人德语学习工作台：单词库、错题库与截图笔记。" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Home,
