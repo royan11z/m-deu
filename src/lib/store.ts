@@ -10,6 +10,8 @@ export const REVIEW = ["待复习", "复习中", "已掌握"] as const;
 export interface Word {
   id: string; word: string; meaning: string; pos: string; plural: string;
   example: string; tags: string[]; level: string; mastery: string; createdAt: number;
+  images?: string[]; // 动词词形表截图
+
 }
 export interface Mistake {
   id: string; question: string; wrong: string; correct: string; reason: string;
@@ -63,7 +65,7 @@ export function remove(coll: Coll, id: string) {
 export { newId };
 
 export async function exportAll() {
-  const ids = [...data.mistakes, ...data.notes].flatMap((x) => x.images);
+  const ids = [...data.words, ...data.mistakes, ...data.notes].flatMap((x) => x.images ?? []);
   const images: Record<string, string> = {};
   for (const id of ids) {
     const b = await getImage(id);
