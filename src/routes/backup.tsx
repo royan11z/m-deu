@@ -5,7 +5,7 @@ import { exportAll, importAll, useData } from "@/lib/store";
 import { PageHeader, Btn } from "@/components/kit";
 
 export const Route = createFileRoute("/backup")({
-  head: () => ({ meta: [{ title: "备份与导入 · Mein Deutsch Workspace" }, { name: "description", content: "导出或导入全部学习数据。" }, { property: "og:title", content: "备份与导入" }, { property: "og:description", content: "导出或导入全部学习数据。" }] }),
+  head: () => ({ meta: [{ title: "备份与导入 · Mein Deutsch Workspace" }, { name: "description", content: "导出或导入全部学习数据。" }, { property: "og:title", content: "备份与导入" }, { property: "og:description", content: "导出或导入全部学习数据。" }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: Backup,
 });
 

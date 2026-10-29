@@ -1,7 +1,8 @@
 import { useSyncExternalStore } from "react";
 import { blobToDataUrl, clearImages, dataUrlToBlob, deleteImage, getImage, newId, putImage } from "./images";
 
-export const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
+export const GENDERS = ["阴性", "阳性", "中性"] as const;
+export const wordFields = (pos: string) => ({ gender: pos === "名词", plural: pos === "名词", images: pos === "动词" });
 export const POS = ["名词", "动词", "形容词", "副词", "介词", "连词", "代词", "短语", "其他"];
 export const MASTERY = ["未掌握", "学习中", "已掌握"] as const;
 export const MISTAKE_CATS = ["语法", "词汇", "阅读", "听力", "写作", "口语"];
@@ -9,7 +10,7 @@ export const REVIEW = ["待复习", "复习中", "已掌握"] as const;
 
 export interface Word {
   id: string; word: string; meaning: string; pos: string; plural: string;
-  example: string; tags: string[]; level: string; mastery: string; createdAt: number;
+  example: string; tags: string[]; gender: string; images: string[]; mastery: string; createdAt: number;
 }
 export interface Mistake {
   id: string; question: string; wrong: string; correct: string; reason: string;
@@ -27,12 +28,22 @@ let data: Data = EMPTY;
 let loaded = false;
 const listeners = new Set<() => void>();
 
+export function normalizeWord(word: Word & { level?: string }): Word {
+  const { level: _level, ...record } = word;
+  return { ...record, gender: record.gender ?? "", images: record.images ?? [] };
+}
+
+function normalizeData(value: Data): Data {
+  const next = { ...EMPTY, ...value };
+  return { ...next, words: next.words.map(normalizeWord) };
+}
+
 function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) data = { ...EMPTY, ...JSON.parse(raw) };
+    if (raw) data = normalizeData(JSON.parse(raw));
   } catch { /* ignore */ }
 }
 function set(next: Data) {
@@ -63,7 +74,7 @@ export function remove(coll: Coll, id: string) {
 export { newId };
 
 export async function exportAll() {
-  const ids = [...data.mistakes, ...data.notes].flatMap((x) => x.images);
+  const ids = [...new Set([...data.words, ...data.mistakes, ...data.notes].flatMap((x) => x.images))];
   const images: Record<string, string> = {};
   for (const id of ids) {
     const b = await getImage(id);
@@ -75,7 +86,7 @@ export async function importAll(json: { data?: Data; images?: Record<string, str
   if (!json.data) throw new Error("文件格式不正确");
   await clearImages();
   for (const [id, url] of Object.entries(json.images ?? {})) await putImage(id, await dataUrlToBlob(url));
-  set({ ...EMPTY, ...json.data });
+  set(normalizeData(json.data));
 }
 
 export const splitTags = (s: string) => s.split(/[,，\s]+/).map((t) => t.trim()).filter(Boolean);

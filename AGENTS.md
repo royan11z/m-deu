@@ -11,3 +11,6 @@
 
 - Text data lives in localStorage via src/lib/store.ts (single store, useSyncExternalStore); images live as Blobs in IndexedDB via src/lib/images.ts, referenced by id — keeps localStorage small.
 - Export/import bundles text + base64 images into one JSON file (src/lib/store.ts) so new collections must be added there too.
+
+- Normalize legacy words at local load and backup import so new part-of-speech fields remain safe without losing existing records.
+- Reuse ImagePicker, Thumb and Lightbox for verb tables; include word image IDs in the shared backup pipeline to preserve offline images.
