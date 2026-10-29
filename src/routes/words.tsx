@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, Sparkles } from "lucide-react";
-import { useData, upsert, remove, newId, LEVELS, POS, MASTERY, splitTags, fmt, type Word } from "@/lib/store";
-import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, statusTone, SearchBox, Empty, confirmDel } from "@/components/kit";
+import { useData, upsert, remove, newId, POS, MASTERY, splitTags, fmt, type Word } from "@/lib/store";
+import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, statusTone, SearchBox, Empty, confirmDel, ImagePicker, Thumb, Lightbox } from "@/components/kit";
 
 export const Route = createFileRoute("/words")({
   validateSearch: (s: Record<string, unknown>): { new?: true | undefined } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
@@ -16,15 +16,16 @@ function Words() {
   const { words } = useData();
   const search = Route.useSearch();
   const nav = useNavigate();
-  const [q, setQ] = useState(""); const [lv, setLv] = useState(""); const [ms, setMs] = useState("");
+  const [q, setQ] = useState(""); const [ms, setMs] = useState("");
   const [edit, setEdit] = useState<Word | null>(null);
+  const [view, setView] = useState<string | null>(null);
   const [tagText, setTagText] = useState("");
   useEffect(() => { if (search.new) { open(blank()); nav({ to: "/words", search: {}, replace: true }); } }, [search.new]);
   const open = (w: Word) => { setEdit(w); setTagText(w.tags.join(", ")); };
 
   const list = useMemo(() => words.filter((w) =>
-    (!lv || w.level === lv) && (!ms || w.mastery === ms) &&
-    (!q || [w.word, w.meaning, w.example, ...w.tags].join(" ").toLowerCase().includes(q.toLowerCase()))), [words, q, lv, ms]);
+    (!ms || w.mastery === ms) &&
+    (!q || [w.word, w.meaning, w.example, ...w.tags].join(" ").toLowerCase().includes(q.toLowerCase()))), [words, q, ms]);
 
   const save = () => {
     if (!edit || !edit.word.trim()) return alert("请填写德语原词");
@@ -43,16 +44,15 @@ function Words() {
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted text-left text-xs text-muted-foreground">
-              <tr><th className="px-3 py-2">德语</th><th className="px-3 py-2">释义</th><th className="px-3 py-2">词性 / 复数</th><th className="px-3 py-2">等级</th><th className="px-3 py-2">状态</th><th className="px-3 py-2">标签</th><th className="px-3 py-2">添加时间</th><th /></tr>
+              <tr><th className="px-3 py-2">德语</th><th className="px-3 py-2">释义</th><th className="px-3 py-2">词性 / 复数</th><th className="px-3 py-2">状态</th><th className="px-3 py-2">标签</th><th className="px-3 py-2">添加时间</th><th /></tr>
             </thead>
             <tbody className="divide-y divide-border">
               {list.map((w) => (
                 <tr key={w.id} className="align-top hover:bg-accent/50">
                   <td className="px-3 py-2"><div className="font-medium">{w.word}</div>{w.example && <div className="mt-0.5 text-xs italic text-muted-foreground">{w.example}</div>}</td>
                   <td className="px-3 py-2">{w.meaning}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{w.pos}{w.plural && ` · ${w.plural}`}</td>
-                  <td className="px-3 py-2"><Pill tone="blue">{w.level}</Pill></td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 text-muted-foreground">{w.pos}{w.pos === "名词" && w.plural && ` · ${w.plural}`}{w.pos === "动词" && !!w.images?.length && <div className="mt-1 flex gap-1">{w.images.map((i) => <Thumb key={i} id={i} className="h-10 w-10" onClick={() => setView(i)} />)}</div>}</td>
+                                    <td className="px-3 py-2">
                     <select value={w.mastery} onChange={(e) => upsert("words", { ...w, mastery: e.target.value })} className={`rounded px-1 py-0.5 text-xs outline-none bg-tone-${statusTone(w.mastery)} text-tone-${statusTone(w.mastery)}-fg`}>
                       {MASTERY.map((m) => <option key={m}>{m}</option>)}
                     </select>
@@ -69,6 +69,7 @@ function Words() {
           </table>
         </div>
       )}
+      <Lightbox id={view} onClose={() => setView(null)} />
       <Modal open={!!edit} onClose={() => setEdit(null)} title={edit && words.some((w) => w.id === edit.id) ? "编辑单词" : "添加单词"}
         footer={<><Btn variant="ghost" onClick={() => setEdit(null)}>取消</Btn><Btn onClick={save}>保存</Btn></>}>
         {edit && (<>
