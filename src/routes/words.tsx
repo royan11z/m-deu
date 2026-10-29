@@ -37,7 +37,6 @@ function Words() {
       <PageHeader title="德语单词库" sub={`共 ${words.length} 个单词`} action={<Btn onClick={() => open(blank())}><Plus className="h-4 w-4" />添加单词</Btn>} />
       <div className="mb-4 flex flex-wrap gap-2">
         <SearchBox value={q} onChange={setQ} placeholder="搜索单词、释义、标签…" />
-        <div className="w-32"><Select value={lv} onChange={setLv} options={LEVELS} placeholder="全部等级" /></div>
         <div className="w-32"><Select value={ms} onChange={setMs} options={MASTERY} placeholder="全部状态" /></div>
       </div>
       {list.length === 0 ? <Empty text="没有找到单词" /> : (
@@ -82,10 +81,13 @@ function Words() {
               </div>
             </Field>
             <Field label="词性"><Select value={edit.pos} onChange={f("pos")} options={POS} /></Field>
-            <Field label="复数形式"><input className={inputCls} value={edit.plural} onChange={(e) => f("plural")(e.target.value)} placeholder="die Äpfel" /></Field>
-            <Field label="等级"><Select value={edit.level} onChange={f("level")} options={LEVELS} /></Field>
             <Field label="掌握状态"><Select value={edit.mastery} onChange={f("mastery")} options={MASTERY} /></Field>
+            {edit.pos === "名词" && <Field label="复数形式"><input className={inputCls} value={edit.plural} onChange={(e) => f("plural")(e.target.value)} placeholder="die Äpfel" /></Field>}
           </div>
+          {edit.pos === "动词" && (
+            <div><span className="mb-1 block text-xs font-medium text-muted-foreground">词形表</span>
+              <ImagePicker value={edit.images ?? []} onChange={(ids) => setEdit((e) => e && { ...e, images: ids })} /></div>
+          )}
           <Field label="例句"><textarea rows={2} className={inputCls} value={edit.example} onChange={(e) => f("example")(e.target.value)} /></Field>
           <Field label="标签（用逗号或空格分隔）"><input className={inputCls} value={tagText} onChange={(e) => setTagText(e.target.value)} placeholder="食物, 日常" /></Field>
         </>)}
