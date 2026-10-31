@@ -82,6 +82,13 @@ export function Thumb({ id, onClick, onRemove, className = "h-24 w-24" }: { id: 
   );
 }
 
+/** 按原始宽高比完整显示截图：宽不超过容器、高度自适应（长图不裁切），小图不放大失真 */
+export function FullImage({ id, onClick, className = "" }: { id: string; onClick?: () => void; className?: string }) {
+  const url = useImageUrl(id);
+  if (!url) return <div className={`h-20 w-full animate-pulse rounded-md border border-border bg-muted ${className}`} />;
+  return <img src={url} alt="截图" onClick={onClick} className={`h-auto max-w-full cursor-zoom-in rounded-md border border-border ${className}`} />;
+}
+
 export function Lightbox({ id, onClose }: { id: string | null; onClose: () => void }) {
   const url = useImageUrl(id ?? "");
   if (!id) return null;

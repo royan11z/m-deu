@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BackupRouteImport } from './routes/backup'
 import { Route as MistakesRouteImport } from './routes/mistakes'
 import { Route as NotesRouteImport } from './routes/notes'
+import { Route as ReviewRouteImport } from './routes/review'
+import { Route as WordReviewRouteImport } from './routes/word-review'
 import { Route as WordsRouteImport } from './routes/words'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +37,16 @@ const NotesRoute = NotesRouteImport.update({
   path: '/notes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReviewRoute = ReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WordReviewRoute = WordReviewRouteImport.update({
+  id: '/word-review',
+  path: '/word-review',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WordsRoute = WordsRouteImport.update({
   id: '/words',
   path: '/words',
@@ -46,6 +58,8 @@ export interface FileRoutesByFullPath {
   '/backup': typeof BackupRoute
   '/mistakes': typeof MistakesRoute
   '/notes': typeof NotesRoute
+  '/review': typeof ReviewRoute
+  '/word-review': typeof WordReviewRoute
   '/words': typeof WordsRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +67,8 @@ export interface FileRoutesByTo {
   '/backup': typeof BackupRoute
   '/mistakes': typeof MistakesRoute
   '/notes': typeof NotesRoute
+  '/review': typeof ReviewRoute
+  '/word-review': typeof WordReviewRoute
   '/words': typeof WordsRoute
 }
 export interface FileRoutesById {
@@ -61,14 +77,38 @@ export interface FileRoutesById {
   '/backup': typeof BackupRoute
   '/mistakes': typeof MistakesRoute
   '/notes': typeof NotesRoute
+  '/review': typeof ReviewRoute
+  '/word-review': typeof WordReviewRoute
   '/words': typeof WordsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/backup' | '/mistakes' | '/notes' | '/words'
+  fullPaths:
+    | '/'
+    | '/backup'
+    | '/mistakes'
+    | '/notes'
+    | '/review'
+    | '/word-review'
+    | '/words'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/backup' | '/mistakes' | '/notes' | '/words'
-  id: '__root__' | '/' | '/backup' | '/mistakes' | '/notes' | '/words'
+  to:
+    | '/'
+    | '/backup'
+    | '/mistakes'
+    | '/notes'
+    | '/review'
+    | '/word-review'
+    | '/words'
+  id:
+    | '__root__'
+    | '/'
+    | '/backup'
+    | '/mistakes'
+    | '/notes'
+    | '/review'
+    | '/word-review'
+    | '/words'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +116,8 @@ export interface RootRouteChildren {
   BackupRoute: typeof BackupRoute
   MistakesRoute: typeof MistakesRoute
   NotesRoute: typeof NotesRoute
+  ReviewRoute: typeof ReviewRoute
+  WordReviewRoute: typeof WordReviewRoute
   WordsRoute: typeof WordsRoute
 }
 
@@ -109,6 +151,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/review': {
+      id: '/review'
+      path: '/review'
+      fullPath: '/review'
+      preLoaderRoute: typeof ReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/word-review': {
+      id: '/word-review'
+      path: '/word-review'
+      fullPath: '/word-review'
+      preLoaderRoute: typeof WordReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/words': {
       id: '/words'
       path: '/words'
@@ -124,6 +180,8 @@ const rootRouteChildren: RootRouteChildren = {
   BackupRoute: BackupRoute,
   MistakesRoute: MistakesRoute,
   NotesRoute: NotesRoute,
+  ReviewRoute: ReviewRoute,
+  WordReviewRoute: WordReviewRoute,
   WordsRoute: WordsRoute,
 }
 export const routeTree = rootRouteImport

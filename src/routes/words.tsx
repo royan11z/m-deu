@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Sparkles } from "lucide-react";
-import { useData, upsert, remove, newId, GENDERS, wordFields, POS, MASTERY, splitTags, fmt, type Word } from "@/lib/store";
+import { Plus, Pencil, Trash2, Sparkles, CalendarCheck } from "lucide-react";
+import { useData, upsert, remove, newId, GENDERS, wordFields, POS, MASTERY, splitTags, fmt, isWordDue, type Word } from "@/lib/store";
 import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, statusTone, SearchBox, Empty, confirmDel, ImagePicker, Thumb, Lightbox } from "@/components/kit";
 
 export const Route = createFileRoute("/words")({
@@ -10,46 +10,61 @@ export const Route = createFileRoute("/words")({
   component: Words,
 });
 
-const blank = (): Word => ({ id: newId(), word: "", meaning: "", pos: "名词", gender: "", plural: "", images: [], example: "", tags: [], mastery: "未掌握", createdAt: Date.now() });
+const LAST_TAGS_KEY = "mein-deutsch-last-word-tags";
+const blank = (): Word => ({ id: newId(), word: "", meaning: "", pos: "名词", gender: "", plural: "", images: [], example: "", tags: [], mastery: "未掌握", createdAt: Date.now(), streak: 0, lastReviewed: "", nextReview: "", reviewCount: 0, history: [] });
+const readLastTags = () => { try { return localStorage.getItem(LAST_TAGS_KEY) ?? ""; } catch { return ""; } };
+const writeLastTags = (value: string) => { try { localStorage.setItem(LAST_TAGS_KEY, value); } catch { /* ignore */ } };
 
 function Words() {
   const { words } = useData();
   const search = Route.useSearch();
   const nav = useNavigate();
-  const [q, setQ] = useState(""); const [ms, setMs] = useState("");
+  const [q, setQ] = useState(""); const [ms, setMs] = useState(""); const [pos, setPos] = useState("");
   const [edit, setEdit] = useState<Word | null>(null);
   const [view, setView] = useState<string | null>(null);
   const [tagText, setTagText] = useState("");
-  useEffect(() => { if (search.new) { open(blank()); nav({ to: "/words", search: {}, replace: true }); } }, [search.new]);
+  useEffect(() => { if (search.new) { openNew(); nav({ to: "/words", search: {}, replace: true }); } }, [search.new]);
+  const openNew = () => { setEdit(blank()); setTagText(readLastTags()); };
   const open = (w: Word) => { setEdit(w); setTagText(w.tags.join(", ")); };
 
   const list = useMemo(() => words.filter((w) =>
     (!ms || w.mastery === ms) &&
-    (!q || [w.word, w.meaning, w.example, ...w.tags].join(" ").toLowerCase().includes(q.toLowerCase()))), [words, q, ms]);
+    (!pos || w.pos === pos) &&
+    (!q || [w.word, w.meaning, w.example, ...w.tags].join(" ").toLowerCase().includes(q.toLowerCase()))), [words, q, ms, pos]);
+  const due = useMemo(() => words.filter((w) => isWordDue(w)).length, [words]);
 
   const save = () => {
     if (!edit || !edit.word.trim()) return alert("请填写德语原词");
-    upsert("words", { ...edit, tags: splitTags(tagText) }); setEdit(null);
+    const tags = splitTags(tagText);
+    const adding = !words.some((w) => w.id === edit.id);
+    upsert("words", { ...edit, tags });
+    if (adding) writeLastTags(tagText);
+    setEdit(null);
   };
   const f = (k: keyof Word) => (v: string) => setEdit((e) => e && { ...e, [k]: v });
 
   return (
     <div>
-      <PageHeader title="德语单词库" sub={`共 ${words.length} 个单词`} action={<Btn onClick={() => open(blank())}><Plus className="h-4 w-4" />添加单词</Btn>} />
+      <PageHeader title="德语单词库" sub={`共 ${words.length} 个单词 · 今日到期 ${due}`}
+        action={<div className="flex gap-2">
+          <Link to="/word-review"><Btn variant="ghost" disabled={due === 0}><CalendarCheck className="h-4 w-4" />开始今日复习{due > 0 ? ` (${due})` : ""}</Btn></Link>
+          <Btn onClick={openNew}><Plus className="h-4 w-4" />添加单词</Btn>
+        </div>} />
       <div className="mb-4 flex flex-wrap gap-2">
         <SearchBox value={q} onChange={setQ} placeholder="搜索单词、释义、标签…" />
         <div className="w-32"><Select value={ms} onChange={setMs} options={MASTERY} placeholder="全部状态" /></div>
+        <div className="w-32"><Select value={pos} onChange={setPos} options={POS} placeholder="全部词性" /></div>
       </div>
       {list.length === 0 ? <Empty text="没有找到单词" /> : (
         <div className="overflow-x-auto rounded-lg border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted text-left text-xs text-muted-foreground">
-              <tr><th className="px-3 py-2">德语</th><th className="px-3 py-2">释义</th><th className="px-3 py-2">词性 / 词形</th><th className="px-3 py-2">状态</th><th className="px-3 py-2">标签</th><th className="px-3 py-2">添加时间</th><th /></tr>
+              <tr><th className="px-3 py-2">德语</th><th className="px-3 py-2">释义</th><th className="px-3 py-2">词性 / 词形</th><th className="px-3 py-2">状态</th><th className="min-w-28 px-3 py-2">标签</th><th className="px-3 py-2">添加时间</th><th /></tr>
             </thead>
             <tbody className="divide-y divide-border">
               {list.map((w) => (
                 <tr key={w.id} className="align-top hover:bg-accent/50">
-                  <td className="px-3 py-2"><div className="font-medium">{w.word}</div>{w.example && <div className="mt-0.5 text-xs italic text-muted-foreground">{w.example}</div>}</td>
+                  <td className="px-3 py-2"><div className="text-lg font-semibold">{w.word}</div>{w.example && <div className="mt-0.5 text-xs italic text-muted-foreground">{w.example}</div>}</td>
                   <td className="px-3 py-2">{w.meaning}</td>
                   <td className="px-3 py-2 text-muted-foreground">
                     {w.pos}{wordFields(w.pos).gender && w.gender && ` · ${w.gender}`}
@@ -61,7 +76,7 @@ function Words() {
                       {MASTERY.map((m) => <option key={m}>{m}</option>)}
                     </select>
                   </td>
-                  <td className="px-3 py-2"><div className="flex flex-wrap gap-1">{w.tags.map((t) => <Pill key={t}>#{t}</Pill>)}</div></td>
+                  <td className="min-w-28 px-3 py-2"><div className="flex flex-wrap gap-1 whitespace-nowrap">{w.tags.map((t) => <Pill key={t}>#{t}</Pill>)}</div></td>
                   <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{fmt(w.createdAt)}</td>
                   <td className="whitespace-nowrap px-2 py-2">
                     <Btn variant="ghost" onClick={() => open(w)} className="border-0 p-1" title="编辑" aria-label="编辑"><Pencil className="h-3.5 w-3.5" /></Btn>

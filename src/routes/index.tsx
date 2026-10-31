@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BookA, CircleX, Images, Plus } from "lucide-react";
-import { useData, fmt } from "@/lib/store";
+import { BookA, CircleX, Images, Plus, CalendarCheck, Layers } from "lucide-react";
+import { useData, fmt, isDue, isWordDue } from "@/lib/store";
 import { PageHeader, Pill, Empty } from "@/components/kit";
 
 export const Route = createFileRoute("/")({
@@ -20,6 +20,8 @@ export const Route = createFileRoute("/")({
 function Home() {
   const { words, mistakes, notes } = useData();
   const pending = mistakes.filter((m) => m.review !== "已掌握").length;
+  const due = mistakes.filter((m) => isDue(m)).length;
+  const wordDue = words.filter((w) => isWordDue(w)).length;
   const recent = [
     ...words.map((w) => ({ t: w.createdAt, kind: "单词", title: `${w.word} — ${w.meaning}`, to: "/words" as const })),
     ...mistakes.map((m) => ({ t: m.createdAt, kind: "错题", title: m.question || "（截图题目）", to: "/mistakes" as const })),
@@ -27,8 +29,8 @@ function Home() {
   ].sort((a, b) => b.t - a.t).slice(0, 10);
 
   const stats = [
-    { label: "单词总数", value: words.length, icon: BookA, to: "/words" as const },
-    { label: "错题总数", value: mistakes.length, extra: `待复习 ${pending}`, icon: CircleX, to: "/mistakes" as const },
+    { label: "单词总数", value: words.length, extra: `今日待复习 ${wordDue}`, icon: BookA, to: "/words" as const },
+    { label: "错题总数", value: mistakes.length, extra: `待复习 ${pending} · 今日待复习 ${due}`, icon: CircleX, to: "/mistakes" as const },
     { label: "笔记总数", value: notes.length, icon: Images, to: "/notes" as const },
   ];
   return (
@@ -42,6 +44,15 @@ function Home() {
             {s.extra && <div className="mt-1 text-sm text-tone-red-fg">{s.extra}</div>}
           </Link>
         ))}
+      </div>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-muted-foreground">复习</h2>
+      <div className="flex flex-wrap gap-2">
+        <Link to="/review" className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent">
+          <CalendarCheck className="h-4 w-4" />错题复习{due > 0 ? ` (${due})` : ""}
+        </Link>
+        <Link to="/word-review" className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent">
+          <Layers className="h-4 w-4" />单词闪卡{wordDue > 0 ? ` (${wordDue})` : ""}
+        </Link>
       </div>
       <h2 className="mb-3 mt-8 text-sm font-semibold text-muted-foreground">快速添加</h2>
       <div className="flex flex-wrap gap-2">

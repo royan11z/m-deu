@@ -1,8 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-import { useData, upsert, remove, newId, MISTAKE_CATS, REVIEW, type Mistake } from "@/lib/store";
-import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, statusTone, SearchBox, Empty, confirmDel, ImagePicker, Thumb, Lightbox } from "@/components/kit";
+import { Plus, Pencil, Trash2, CalendarCheck } from "lucide-react";
+import { useData, upsert, remove, newId, MISTAKE_CATS, REVIEW, isDue, localToday, type Mistake } from "@/lib/store";
+import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, statusTone, SearchBox, Empty, confirmDel, ImagePicker, FullImage, Lightbox } from "@/components/kit";
 
 export const Route = createFileRoute("/mistakes")({
   validateSearch: (s: Record<string, unknown>): { new?: true | undefined } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
@@ -10,8 +10,8 @@ export const Route = createFileRoute("/mistakes")({
   component: Mistakes,
 });
 
-const today = () => new Date().toISOString().slice(0, 10);
-const blank = (): Mistake => ({ id: newId(), question: "", wrong: "", correct: "", reason: "", category: "语法", date: today(), images: [], review: "待复习", createdAt: Date.now() });
+// 新错题默认当天可复习：streak 0、nextReview 为本地今天
+const blank = (): Mistake => ({ id: newId(), question: "", wrong: "", correct: "", reason: "", category: "语法", date: localToday(), images: [], review: "待复习", createdAt: Date.now(), streak: 0, lastReviewed: "", nextReview: localToday(), reviewCount: 0, history: [] });
 
 function Mistakes() {
   const { mistakes } = useData();
@@ -23,6 +23,7 @@ function Mistakes() {
 
   const list = useMemo(() => mistakes.filter((m) => (!cat || m.category === cat) && (!rv || m.review === rv) &&
     (!q || [m.question, m.wrong, m.correct, m.reason].join(" ").toLowerCase().includes(q.toLowerCase()))), [mistakes, q, cat, rv]);
+  const due = useMemo(() => mistakes.filter((m) => isDue(m)).length, [mistakes]);
   const f = (k: keyof Mistake) => (v: string) => setEdit((e) => e && { ...e, [k]: v });
   const save = () => {
     if (!edit || (!edit.question.trim() && edit.images.length === 0)) return alert("请填写题目或添加截图");
@@ -31,7 +32,11 @@ function Mistakes() {
 
   return (
     <div>
-      <PageHeader title="德语错题库" sub={`共 ${mistakes.length} 题 · 待复习 ${mistakes.filter((m) => m.review !== "已掌握").length}`} action={<Btn onClick={() => setEdit(blank())}><Plus className="h-4 w-4" />添加错题</Btn>} />
+      <PageHeader title="德语错题库" sub={`共 ${mistakes.length} 题 · 待复习 ${mistakes.filter((m) => m.review !== "已掌握").length} · 今日到期 ${due}`}
+        action={<div className="flex gap-2">
+          <Link to="/review"><Btn variant="ghost" disabled={due === 0}><CalendarCheck className="h-4 w-4" />开始今日复习{due > 0 ? ` (${due})` : ""}</Btn></Link>
+          <Btn onClick={() => setEdit(blank())}><Plus className="h-4 w-4" />添加错题</Btn>
+        </div>} />
       <div className="mb-4 flex flex-wrap gap-2">
         <SearchBox value={q} onChange={setQ} placeholder="搜索题目、答案、原因…" />
         <div className="w-32"><Select value={cat} onChange={setCat} options={MISTAKE_CATS} placeholder="全部分类" /></div>
@@ -51,12 +56,18 @@ function Mistakes() {
                     <span>{m.date}</span>
                   </div>
                   {m.question && <p className="whitespace-pre-wrap font-medium">{m.question}</p>}
-                  <div className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
-                    <div><span className="text-muted-foreground">错误答案：</span><span className="text-tone-red-fg line-through">{m.wrong}</span></div>
-                    <div><span className="text-muted-foreground">正确答案：</span><span className="text-tone-green-fg">{m.correct}</span></div>
+                  {/* 宽屏左右两列：左为突出的正确答案，右为弱化的错误信息；窄屏自动上下堆叠（正确答案在上） */}
+                  <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <span className="text-xs text-muted-foreground">正确答案</span>
+                      <p className="mt-0.5 text-lg font-semibold text-tone-green-fg">{m.correct}</p>
+                    </div>
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <p>错误答案：<span className="text-tone-red-fg line-through">{m.wrong}</span></p>
+                      {m.reason && <p>错误原因：{m.reason}</p>}
+                    </div>
                   </div>
-                  {m.reason && <p className="mt-1 text-sm"><span className="text-muted-foreground">错误原因：</span>{m.reason}</p>}
-                  {m.images.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{m.images.map((id) => <Thumb key={id} id={id} onClick={() => setView(id)} className="h-20 w-28" />)}</div>}
+                  {m.images.length > 0 && <div className="mt-3 flex flex-wrap items-start gap-2">{m.images.map((id) => <FullImage key={id} id={id} onClick={() => setView(id)} />)}</div>}
                 </div>
                 <div className="flex">
                   <button onClick={() => setEdit(m)} className="rounded p-1 hover:bg-accent" title="编辑"><Pencil className="h-3.5 w-3.5" /></button>
