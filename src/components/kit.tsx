@@ -89,13 +89,39 @@ export function FullImage({ id, onClick, className = "" }: { id: string; onClick
   return <img src={url} alt="截图" onClick={onClick} className={`h-auto max-w-full cursor-zoom-in rounded-md border border-border ${className}`} />;
 }
 
-export function Lightbox({ id, onClose }: { id: string | null; onClose: () => void }) {
-  const url = useImageUrl(id ?? "");
+export function Lightbox({ id, onClose }: { id: string | string[] | null; onClose: () => void }) {
   if (!id) return null;
+  const ids = Array.isArray(id) ? id : [id];
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/80 p-6" onClick={onClose}>
-      {url && <img src={url} alt="大图" className="max-h-full max-w-full rounded-md shadow-2xl" />}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/80 p-4 sm:p-6"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-full w-full max-w-5xl flex-col items-center gap-4 overflow-y-auto rounded-lg py-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {ids.map((i) => (
+          <LightboxImage key={i} id={i} />
+        ))}
+      </div>
     </div>
+  );
+}
+
+function LightboxImage({ id }: { id: string }) {
+  const url = useImageUrl(id);
+  if (!url) {
+    return (
+      <div className="h-24 w-full max-w-md animate-pulse rounded-md border border-border bg-muted" />
+    );
+  }
+  return (
+    <img
+      src={url}
+      alt="词形表"
+      className="h-auto max-w-full rounded-md border border-border bg-background shadow-2xl"
+    />
   );
 }
 

@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Sparkles, CalendarCheck } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles, CalendarCheck, Table2 } from "lucide-react";
 import { useData, upsert, remove, newId, GENDERS, wordFields, POS, MASTERY, splitTags, fmt, isWordDue, type Word } from "@/lib/store";
-import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, statusTone, SearchBox, Empty, confirmDel, ImagePicker, Thumb, Lightbox } from "@/components/kit";
+import { PageHeader, Btn, Field, inputCls, Select, Modal, Pill, statusTone, SearchBox, Empty, confirmDel, ImagePicker, Lightbox } from "@/components/kit";
 
 export const Route = createFileRoute("/words")({
   validateSearch: (s: Record<string, unknown>): { new?: true | undefined } => ({ new: s["new"] === true || s["new"] === "true" ? true : undefined }),
@@ -21,7 +21,7 @@ function Words() {
   const nav = useNavigate();
   const [q, setQ] = useState(""); const [ms, setMs] = useState(""); const [pos, setPos] = useState("");
   const [edit, setEdit] = useState<Word | null>(null);
-  const [view, setView] = useState<string | null>(null);
+  const [view, setView] = useState<string | string[] | null>(null);
   const [tagText, setTagText] = useState("");
   useEffect(() => { if (search.new) { openNew(); nav({ to: "/words", search: {}, replace: true }); } }, [search.new]);
   const openNew = () => { setEdit(blank()); setTagText(readLastTags()); };
@@ -69,7 +69,18 @@ function Words() {
                   <td className="px-3 py-2 text-muted-foreground">
                     {w.pos}{wordFields(w.pos).gender && w.gender && ` · ${w.gender}`}
                     {wordFields(w.pos).plural && w.plural && <div className="mt-1 text-xs">{w.plural}</div>}
-                    {wordFields(w.pos).images && w.images.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{w.images.map((id) => <Thumb key={id} id={id} onClick={() => setView(id)} className="h-16 w-20" />)}</div>}
+                    {wordFields(w.pos).images && w.images.length > 0 && (
+                      <Btn
+                        variant="ghost"
+                        onClick={() => setView(w.images)}
+                        className="mt-1 px-2 py-0.5 text-xs"
+                        title="查看词形表"
+                        aria-label={`查看 ${w.word} 的词形表`}
+                      >
+                        <Table2 className="h-3 w-3" />
+                        词形表
+                      </Btn>
+                    )}
                   </td>
                   <td className="px-3 py-2">
                     <select value={w.mastery} onChange={(e) => upsert("words", { ...w, mastery: e.target.value })} className={`rounded px-1 py-0.5 text-xs outline-none bg-tone-${statusTone(w.mastery)} text-tone-${statusTone(w.mastery)}-fg`}>
