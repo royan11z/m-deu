@@ -42,7 +42,7 @@ export function Modal({ open, onClose, title, children, footer }: { open: boolea
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-foreground/30 p-4 pt-16" onMouseDown={onClose}>
-      <div className="w-full max-w-2xl rounded-xl border border-border bg-background shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" className="w-full max-w-2xl rounded-xl border border-border bg-background shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h2 className="font-semibold">{title}</h2>
           <button onClick={onClose} className="rounded p-1 hover:bg-accent"><X className="h-4 w-4" /></button>

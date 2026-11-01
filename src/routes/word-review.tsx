@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Check, X, Zap } from "lucide-react";
 import { useData, upsert, applyWordReviewResult, gradeAnswer, isWordDue, MASTERY, type Word } from "@/lib/store";
 import { PageHeader, Btn, inputCls, Select, Pill, Empty, statusTone } from "@/components/kit";
@@ -14,6 +14,9 @@ type Phase = "pick" | "run" | "done";
 
 // 只打乱本次队列，不改动单词数据本身
 const shuffle = <T,>(list: T[]) => [...list].sort(() => Math.random() - 0.5);
+
+/** 快捷键提示徽标：仅桌面端显示，小屏/触屏隐藏，避免挤占按钮空间 */
+const Kbd = ({ k }: { k: string }) => <kbd className="hidden rounded border border-current px-1 align-baseline text-[10px] leading-4 opacity-60 sm:inline-block">{k}</kbd>;
 
 function WordReview() {
   const { words } = useData();
@@ -30,6 +33,65 @@ function WordReview() {
   const [results, setResults] = useState<boolean[]>([]);
 
   useEffect(() => setMounted(true), []);
+
+  // 声明提前：键盘监听的 useEffect 必须位于下方各阶段的早退语句之前
+  const current = queue[idx];
+  const last = idx === queue.length - 1;
+
+  // ok: 是否答对；note: 附加说明；markMastered: 「太简单」拼写正确时归类为已掌握
+  const grade = useCallback((ok: boolean, note = "", markMastered = false) => {
+    if (!current) return;
+    if (practice) {
+      setGraded({ ok, note, nextReview: current.nextReview || "（练习模式不更新）", streak: current.streak });
+    } else {
+      let updated = applyWordReviewResult(current, ok);
+      if (markMastered) updated = { ...updated, mastery: "已掌握" };
+      upsert("words", updated);
+      setGraded({ ok, note, nextReview: updated.nextReview, streak: updated.streak });
+    }
+    setResults((r) => [...r, ok]);
+  }, [current, practice]);
+  const submitSpelling = () => {
+    if (!current || !spell.trim()) return;
+    if (gradeAnswer(spell, current.word)) grade(true, "拼写正确，已自动归类为「已掌握」", true);
+    else grade(true, `拼写错误，正确拼写：${current.word}。按「认识」处理`, false);
+  };
+  const next = useCallback(() => {
+    if (last) setPhase("done");
+    else { setIdx(idx + 1); setFlipped(false); setGraded(null); setSpelling(false); setSpell(""); }
+  }, [last, idx]);
+
+  // 键盘快捷键：Tab 翻面（等同点击卡片）；翻面后 Q=认识、E=不认识；评分后 Enter=下一张。
+  // 输入框/下拉/可编辑元素与弹窗内不劫持；修饰键、长按连发与 IME 组合输入不触发
+  useEffect(() => {
+    if (phase !== "run" || !current) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.altKey || e.metaKey || e.repeat || e.isComposing) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      if (t?.closest?.('[role="dialog"], [aria-modal="true"]')) return;
+      if (e.key === "Tab") {
+        if (graded) return; // 评分完成后恢复 Tab 原生焦点导航（可切到「下一张」）
+        e.preventDefault();
+        setFlipped((f) => !f);
+        return;
+      }
+      if (e.key === "Enter") {
+        if (!graded) return; // 未评分时不动作；「太简单」的拼写提交由表单自身处理（输入框已在上方排除）
+        if (t && (t.tagName === "BUTTON" || t.tagName === "A")) return; // 焦点在按钮/链接上时走原生激活，避免同一次按键重复推进
+        e.preventDefault();
+        next();
+        return;
+      }
+      if (graded || !flipped || spelling) return; // 仅翻面后可评分或选「太简单」；拼写输入时不劫持
+      const k = e.key.toLowerCase();
+      if (k === "q") grade(true);
+      else if (k === "e") grade(false);
+      else if (k === "p") setSpelling(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase, flipped, graded, spelling, current, grade, next]);
 
   if (!mounted) return <div className="py-16 text-center text-sm text-muted-foreground">载入中…</div>;
 
@@ -99,31 +161,7 @@ function WordReview() {
   }
 
   // —— 闪卡答题 ——
-  const current = queue[idx];
   if (!current) return null; // 不会发生：idx 始终小于 queue.length
-  const last = idx === queue.length - 1;
-
-  // ok: 是否答对；note: 附加说明；markMastered: 「太简单」拼写正确时归类为已掌握
-  const grade = (ok: boolean, note = "", markMastered = false) => {
-    if (practice) {
-      setGraded({ ok, note, nextReview: current.nextReview || "（练习模式不更新）", streak: current.streak });
-    } else {
-      let updated = applyWordReviewResult(current, ok);
-      if (markMastered) updated = { ...updated, mastery: "已掌握" };
-      upsert("words", updated);
-      setGraded({ ok, note, nextReview: updated.nextReview, streak: updated.streak });
-    }
-    setResults((r) => [...r, ok]);
-  };
-  const submitSpelling = () => {
-    if (!spell.trim()) return;
-    if (gradeAnswer(spell, current.word)) grade(true, "拼写正确，已自动归类为「已掌握」", true);
-    else grade(true, `拼写错误，正确拼写：${current.word}。按「认识」处理`, false);
-  };
-  const next = () => {
-    if (last) setPhase("done");
-    else { setIdx(idx + 1); setFlipped(false); setGraded(null); setSpelling(false); setSpell(""); }
-  };
 
   return (
     <div className="max-w-2xl">
@@ -141,7 +179,7 @@ function WordReview() {
             <Pill tone={statusTone(current.mastery)}>{current.mastery}</Pill>
             <div className="text-center font-display text-3xl font-semibold">{current.word}</div>
             <div className="text-xs text-muted-foreground">{current.pos}{current.gender && ` · ${current.gender}`}{current.plural && ` · ${current.plural}`}</div>
-            <div className="mt-4 text-xs text-muted-foreground">点击卡片查看释义</div>
+            <div className="mt-4 text-xs text-muted-foreground">点击卡片<span className="hidden sm:inline">或按 <Kbd k="Tab" /> </span>查看释义</div>
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card p-6 [backface-visibility:hidden] [transform:rotateY(180deg)]">
             <div className="text-center font-display text-3xl font-semibold">{current.meaning || "（未填写释义）"}</div>
@@ -156,7 +194,7 @@ function WordReview() {
         </div>
         {!graded ? (
           !flipped ? (
-            <p className="text-sm text-muted-foreground">先点击卡片翻面，回忆中文释义后再作答。</p>
+            <p className="text-sm text-muted-foreground">先点击卡片<span className="hidden sm:inline">或按 <Kbd k="Tab" /></span>翻面，回忆中文释义后再作答。</p>
           ) : spelling ? (
             <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); submitSpelling(); }}>
               <input autoFocus className={inputCls} placeholder="请拼写该德语单词…" value={spell} onChange={(e) => setSpell(e.target.value)} />
@@ -167,9 +205,9 @@ function WordReview() {
             </form>
           ) : (
             <div className="flex flex-wrap gap-2">
-              <Btn onClick={() => grade(true)}><Check className="h-4 w-4" />认识</Btn>
-              <Btn variant="ghost" onClick={() => grade(false)}><X className="h-4 w-4" />不认识</Btn>
-              <Btn variant="ghost" onClick={() => setSpelling(true)}><Zap className="h-4 w-4" />太简单</Btn>
+              <Btn onClick={() => grade(true)}><Check className="h-4 w-4" />认识<Kbd k="Q" /></Btn>
+              <Btn variant="ghost" onClick={() => grade(false)}><X className="h-4 w-4" />不认识<Kbd k="E" /></Btn>
+              <Btn variant="ghost" onClick={() => setSpelling(true)}><Zap className="h-4 w-4" />太简单<Kbd k="P" /></Btn>
             </div>
           )
         ) : (
@@ -182,7 +220,7 @@ function WordReview() {
               {graded.note && <div className="mt-1">{graded.note}</div>}
             </div>
             {!practice && <p className="text-xs text-muted-foreground">下次复习：{graded.nextReview} · 连续答对 {graded.streak} 次</p>}
-            <Btn onClick={next}>{last ? "查看复习统计" : "下一张"}</Btn>
+            <Btn onClick={next}>{last ? "查看复习统计" : "下一张"}<Kbd k="Enter" /></Btn>
           </div>
         )}
       </div>
